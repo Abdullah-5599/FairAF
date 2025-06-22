@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container max-w-xl mx-auto py-8">
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+        <h2 class="text-2xl font-bold mb-6 text-fuchsia-700">Penalty Fund</h2>
+        <div class="mb-6">
+            <div class="text-lg font-semibold">Total Penalties Collected:</div>
+            <div class="text-3xl font-black text-fuchsia-700">${{ "%.2f"|format(fund.total) }}</div>
+        </div>
+        <div>
+            <h3 class="font-semibold text-lg mb-2 text-fuchsia-700">Breakdown By Member</h3>
+            <ul>
+                {% for member in members %}
+                    <li class="my-1">
+                        <span class="font-semibold">{{ member.username }}</span>:
+                        <span class="text-fuchsia-900">
+                            ${{ "%.2f"|format(penalty_by_user.get(member.id, 0)) }}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="mt-6">
+            <h4 class="font-semibold text-md mb-1">Penalty Records</h4>
+            <ul class="max-h-40 overflow-y-auto">
+                {% for p in penalties %}
+                    {% set user = (members | selectattr('id', 'equalto', p.user_id) | list | first) %}
+                    <li class="my-1 text-sm">
+                        <b>{{ user.username if user else 'Unknown' }}</b> - ${{ "%.2f"|format(p.amount) }} ({{ p.applied_at.strftime('%Y-%m-%d') }})
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

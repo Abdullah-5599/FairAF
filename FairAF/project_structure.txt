@@ -1,0 +1,30 @@
+fairaf/                  # Main app package
+│
+├── __init__.py          # Initializes Flask app, database, routes
+├── models.py            # All database tables: User, Group, Chore, Expense, etc.
+│
+├── auth/                # User login & signup
+│   ├── __init__.py      # Blueprint setup
+│   └── routes.py        # Routes for login, signup, logout
+│
+├── main/                # Main dashboard and group management
+│   ├── __init__.py
+│   └── routes.py
+│
+├── expense/             # Expense-related logic
+│   ├── __init__.py
+│   └── routes.py
+│
+├── chore/               # Chore management, file uploads
+│   ├── __init__.py
+│   └── routes.py
+│
+├── static/              # CSS, JS, images (optional)
+│
+├── templates/           # All HTML templates
+│   ├── base.html        # Layout with navbar, extends into others
+│   ├── login.html, signup.html, dashboard.html, etc.
+│
+├── uploads/             # Where proof-of-chore files go (images/videos)
+│
+└── config.py (optional) # For configs if you want cleaner init

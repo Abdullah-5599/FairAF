@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto max-w-3xl py-6">
+    <h2 class="text-3xl font-bold mb-6 text-purple-700">Roommate Expenses</h2>
+    <button class="px-4 py-2 bg-purple-600 text-white rounded-2xl shadow hover:bg-purple-700 mb-4" data-bs-toggle="modal" data-bs-target="#addExpenseModal">
+        + Add Expense
+    </button>
+
+    <div class="overflow-x-auto rounded-2xl shadow">
+        <table class="min-w-full text-sm divide-y divide-gray-200">
+            <thead class="bg-purple-50">
+                <tr>
+                    <th class="py-3 px-4 text-left font-semibold">Title</th>
+                    <th class="py-3 px-4 text-left font-semibold">Total</th>
+                    <th class="py-3 px-4 text-left font-semibold">Split</th>
+                    <th class="py-3 px-4 text-left font-semibold">Proof</th>
+                    <th class="py-3 px-4 text-left font-semibold">Date</th>
+                    <th class="py-3 px-4 text-left font-semibold">Action</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white">
+                {% for expense in expenses %}
+                <tr class="border-b">
+                    <td class="py-2 px-4">{{ expense.title }}</td>
+                    <td class="py-2 px-4">${{ "%.2f"|format(expense.total_amount) }}</td>
+                    <td class="py-2 px-4">
+                        {% for share in expense.shares %}
+                            <span class="inline-block rounded-xl bg-purple-100 px-2 py-1 m-1">{{ share.user.username }}: ${{ "%.2f"|format(share.amount) }}</span><br>
+                        {% endfor %}
+                    </td>
+                    <td class="py-2 px-4">
+                        {% if expense.proof_image %}
+                            <a href="{{ url_for('static', filename='uploads/' + expense.proof_image) }}" target="_blank">
+                                <img src="{{ url_for('static', filename='uploads/' + expense.proof_image) }}" alt="Proof" class="rounded shadow" style="max-width:60px;max-height:60px;">
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-2 px-4">{{ expense.created_at.strftime('%Y-%m-%d') }}</td>
+                    <td class="py-2 px-4">
+                        <form method="POST" action="{{ url_for('expense.delete_expense', expense_id=expense.id) }}">
+                            <button type="submit" class="text-red-500 hover:text-white hover:bg-red-500 px-3 py-1 rounded transition-all">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Expense Modal -->
+<div class="modal fade" id="addExpenseModal" tabindex="-1" aria-labelledby="addExpenseModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="modal-content rounded-2xl">
+        <div class="modal-header bg-purple-600 text-white rounded-t-2xl">
+          <h5 class="modal-title" id="addExpenseModalLabel">Add Expense</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 space-y-3">
+          <div>
+            <label class="font-semibold">Title</label>
+            <input type="text" class="form-control rounded-xl" name="title" required>
+          </div>
+          <div>
+            <label class="font-semibold">Description</label>
+            <input type="text" class="form-control rounded-xl" name="description">
+          </div>
+          <div>
+            <label class="font-semibold">Total Amount ($)</label>
+            <input type="number" class="form-control rounded-xl" name="total_amount" id="total_amount" min="0.01" step="0.01" required>
+          </div>
+          <div>
+            <label class="font-semibold">Proof Image (optional)</label>
+            <input type="file" class="form-control rounded-xl" name="proof_image" accept="image/*">
+          </div>
+          <div>
+            <label class="font-semibold">Split Among</label>
+            <div id="splitUsers">
+              <div class="input-group mb-2 split-row">
+                <select class="form-select rounded-xl" name="user_id">
+                  {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.username }}</option>
+                  {% endfor %}
+                </select>
+                <input type="number" class="form-control mx-2 rounded-xl" name="share_amount" placeholder="Amount" min="0.01" step="0.01" required>
+                <button class="btn btn-outline-danger rounded-xl remove-split" type="button">&times;</button>
+              </div>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm rounded-xl mt-1" type="button" id="addSplitBtn">+ Add User</button>
+            <div class="form-text text-danger" id="splitError"></div>
+          </div>
+        </div>
+        <div class="modal-footer rounded-b-2xl">
+          <button type="submit" class="btn btn-primary rounded-xl">Add Expense</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Add split row
+    document.getElementById('addSplitBtn').onclick = function() {
+        const splitRow = document.querySelector('.split-row');
+        const clone = splitRow.cloneNode(true);
+        clone.querySelector('input').value = '';
+        document.getElementById('splitUsers').appendChild(clone);
+        updateRemoveBtns();
+    };
+    function updateRemoveBtns() {
+        document.querySelectorAll('.remove-split').forEach(btn => {
+            btn.onclick = function() {
+                if (document.querySelectorAll('.split-row').length > 1) {
+                    btn.parentNode.remove();
+                }
+            }
+        });
+    }
+    updateRemoveBtns();
+
+    // Validation: ensure split total equals total_amount
+    document.querySelector('form').onsubmit = function(e) {
+        const total = parseFloat(document.getElementById('total_amount').value);
+        const shareInputs = document.querySelectorAll('input[name="share_amount"]');
+        let sum = 0;
+        shareInputs.forEach(i => sum += parseFloat(i.value || 0));
+        const errorDiv = document.getElementById('splitError');
+        if (Math.abs(sum - total) > 0.01) {
+            errorDiv.textContent = "Split total must equal overall amount!";
+            e.preventDefault();
+            return false;
+        }
+        errorDiv.textContent = "";
+        return true;
+    };
+});
+</script>
+{% endblock %}

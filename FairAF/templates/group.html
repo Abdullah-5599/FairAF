@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container max-w-xl mx-auto py-8">
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+        <h2 class="text-2xl font-bold mb-6 text-indigo-700">Group Settings</h2>
+        <form method="POST">
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Group Name</label>
+                <input type="text" name="group_name" value="{{ group.name }}" class="form-control rounded-xl" required>
+            </div>
+            <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-800">Update Name</button>
+        </form>
+
+        <div class="mt-6 mb-6">
+            <span class="font-semibold">Group Code:</span>
+            <span class="text-indigo-700 text-lg font-mono">{{ group.code }}</span>
+            <button onclick="navigator.clipboard.writeText('{{ group.code }}')" class="ml-2 px-2 py-1 bg-indigo-100 rounded">Copy</button>
+            <span class="ml-2 text-gray-500">(Share this code to invite others)</span>
+        </div>
+
+        <div class="mt-6">
+            <h3 class="font-semibold text-lg mb-2 text-indigo-700">Members</h3>
+            <ul>
+                {% for user in members %}
+                <li class="my-1 flex items-center">
+                    <span class="font-semibold">{{ user.username }}</span>
+                    {% if user.is_admin %}
+                        <span class="ml-2 px-2 py-1 bg-indigo-200 text-indigo-800 text-xs rounded">Admin</span>
+                    {% endif %}
+                    <span class="ml-2 text-gray-500">{{ user.email }}</span>
+                    {% if current_user.is_admin and user.id != current_user.id %}
+                        <form method="POST" action="{{ url_for('main.kick_member', user_id=user.id) }}" class="inline ml-2">
+                            <button class="px-2 py-1 bg-red-100 text-red-900 rounded hover:bg-red-300">Kick</button>
+                        </form>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="mt-6">
+            <form method="POST" action="{{ url_for('main.leave_group') }}">
+                <button class="px-3 py-1 rounded bg-red-200 text-red-900 hover:bg-red-400">Leave Group</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

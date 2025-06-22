@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto max-w-3xl py-6">
+    <h2 class="text-3xl font-bold mb-6 text-teal-700">Room Chores</h2>
+    <button class="px-4 py-2 bg-teal-600 text-white rounded-2xl shadow hover:bg-teal-700 mb-4" data-bs-toggle="modal" data-bs-target="#addChoreModal">
+        + Add Chore
+    </button>
+
+    <div class="overflow-x-auto rounded-2xl shadow">
+        <table class="min-w-full text-sm divide-y divide-gray-200">
+            <thead class="bg-teal-50">
+                <tr>
+                    <th class="py-3 px-4 text-left font-semibold">Title</th>
+                    <th class="py-3 px-4 text-left font-semibold">Due</th>
+                    <th class="py-3 px-4 text-left font-semibold">Assigned</th>
+                    <th class="py-3 px-4 text-left font-semibold">Completed</th>
+                    <th class="py-3 px-4 text-left font-semibold">Proof</th>
+                    <th class="py-3 px-4 text-left font-semibold">Penalty</th>
+                    <th class="py-3 px-4 text-left font-semibold">Action</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white">
+                {% for chore in chores %}
+                <tr class="border-b">
+                    <td class="py-2 px-4">{{ chore.title }}</td>
+                    <td class="py-2 px-4">{{ chore.due_date.strftime('%Y-%m-%d') if chore.due_date else '-' }}</td>
+                    <td class="py-2 px-4">{{ chore.user.username if chore.user else '-' }}</td>
+                    <td class="py-2 px-4">
+                        {% if chore.completed %}
+                            <span class="inline-block rounded-xl bg-green-100 px-2 py-1">Yes</span>
+                        {% else %}
+                            <span class="inline-block rounded-xl bg-gray-200 px-2 py-1">No</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-2 px-4">
+                        {% if chore.proof_image %}
+                            <a href="{{ url_for('static', filename='uploads/' + chore.proof_image) }}" target="_blank">
+                                <img src="{{ url_for('static', filename='uploads/' + chore.proof_image) }}" alt="Proof" class="rounded shadow" style="max-width:60px;max-height:60px;">
+                            </a>
+                        {% else %}
+                            <span class="text-gray-400">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-2 px-4">
+                        <span class="inline-block rounded-xl bg-red-100 text-red-700 px-2 py-1">
+                            ${{ "%.2f"|format(chore.penalty_amount or 0) }}
+                        </span>
+                        {% if chore.penalty_applied and not chore.completed %}
+                            <span class="ml-1 inline-block rounded-xl bg-red-200 text-red-800 px-2 py-1">Applied</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-2 px-4 space-x-1">
+                        {% if not chore.completed %}
+                            <form method="POST" action="{{ url_for('chore.complete_chore', chore_id=chore.id) }}" class="d-inline">
+                                <button type="submit" class="text-green-500 hover:text-white hover:bg-green-500 px-3 py-1 rounded transition-all">Complete</button>
+                            </form>
+                        {% endif %}
+                        <form method="POST" action="{{ url_for('chore.delete_chore', chore_id=chore.id) }}" class="d-inline">
+                            <button type="submit" class="text-red-500 hover:text-white hover:bg-red-500 px-3 py-1 rounded transition-all">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Chore Modal -->
+<div class="modal fade" id="addChoreModal" tabindex="-1" aria-labelledby="addChoreModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <form method="POST" enctype="multipart/form-data">
+      <div class="modal-content rounded-2xl">
+        <div class="modal-header bg-teal-600 text-white rounded-t-2xl">
+          <h5 class="modal-title" id="addChoreModalLabel">Add Chore</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4 space-y-3">
+          <div>
+            <label class="font-semibold">Title</label>
+            <input type="text" class="form-control rounded-xl" name="title" required>
+          </div>
+          <div>
+            <label class="font-semibold">Description</label>
+            <input type="text" class="form-control rounded-xl" name="description">
+          </div>
+          <div>
+            <label class="font-semibold">Due Date</label>
+            <input type="date" class="form-control rounded-xl" name="due_date">
+          </div>
+          <div>
+            <label class="font-semibold">Assign to</label>
+            <select class="form-select rounded-xl" name="assigned_to" required>
+              {% for user in users %}
+                <option value="{{ user.id }}">{{ user.username }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="font-semibold">Penalty Amount ($)</label>
+            <input type="number" class="form-control rounded-xl" name="penalty_amount" value="0" step="0.01" min="0" required>
+          </div>
+          <div>
+            <label class="font-semibold">Proof Image (optional)</label>
+            <input type="file" class="form-control rounded-xl" name="proof_image" accept="image/*">
+          </div>
+        </div>
+        <div class="modal-footer rounded-b-2xl">
+          <button type="submit" class="btn btn-primary rounded-xl">Add Chore</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
